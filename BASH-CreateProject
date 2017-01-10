@@ -1,0 +1,7 @@
+#!/bin/bash
+
+projname=$1
+
+mkdir $projname
+cd $projname
+mkdir data

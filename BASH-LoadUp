@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo Setting up data collection environment
+
+python3 -m venv venv
+
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+python CONFIG/configDb.py
+
+python -m spacy.en.download all
