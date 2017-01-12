@@ -8,6 +8,6 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 
-python CONFIG/configDb.py
+python CONFIG/configDb.py docs
 
 python -m spacy.en.download all

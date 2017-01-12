@@ -2,6 +2,12 @@ import psycopg2
 import hashlib
 import random
 import string
+import argparse
+
+parser = argparse.ArgumentParser(description="Set up a database")
+parser.add_argument('tblname', help="Name of table to be created.")
+args = parser.parse_args()
+tblName = args.tblname
 
 temp = ''.join(
     random.SystemRandom().choice(
@@ -20,15 +26,27 @@ conn = psycopg2.connect("dbname=postgres user=postgres password={0}".format(dbpa
 conn.autocommit = True
 cur = conn.cursor()
 
-cur.execute("CREATE ROLE macmanus WITH CREATEDB PASSWORD %s;", (hexDigest,))
-cur.execute("CREATE DATABASE saints OWNER macmanus;")
+#cur.execute("CREATE ROLE macmanus WITH CREATEDB PASSWORD %s;", (hexDigest,))
+#cur.execute("CREATE DATABASE saints OWNER macmanus;")
+#cur.execute("DROP TABLE {0};".format(tblName))
 cur.execute(
     '''
-    CREATE TABLE docs (
-        id integer PRIMARY KEY DEFULT nextval('serial'),
-        timestamp TIMEZONE WITH TIME ZONE NOT NULL DEFAULT clock_timestamp(),
+    CREATE TABLE {0} (
+        id SERIAL PRIMARY KEY,
+        timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT clock_timestamp(),
         finame text,
         doc_string text
         );
-    '''
+    '''.format(tblName)
     )
+cur.execute("ALTER TABLE {0} ADD COLUMN fts tsvector;".format(tblName))
+cur.execute("UPDATE {0} SET fts = to_tsvector('english', doc_string);".format(tblName))
+cur.execute("CREATE INDEX fts_idx ON {0} USING GIN (fts);".format(tblName))
+cur.execute('''
+    CREATE TRIGGER ftsvectorupdate BEFORE INSERT OR UPDATE
+        ON {0} FOR EACH ROW EXECUTE PROCEDURE
+        tsvector_update_trigger(fts, 'pg_catalog.english', doc_string);
+    '''.format(tblName)
+    )
+    
+
